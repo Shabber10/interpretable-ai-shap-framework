@@ -5,6 +5,19 @@
 [![XGBoost](https://img.shields.io/badge/Model-XGBoost-orange.svg)](https://xgboost.readthedocs.io/)
 [![SHAP](https://img.shields.io/badge/Explainability-SHAP-success.svg)](https://shap.readthedocs.io/)
 [![Modern UI](https://img.shields.io/badge/UI-Glassmorphism-purple.svg)](https://lucide.dev/)
+[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://interpretable-ai-shap-framework.onrender.com)
+
+---
+
+## 🌐 Live Demo
+
+> **▶️ [Click here to try the Live Demo](https://interpretable-ai-shap-framework.onrender.com)**
+>
+> Hosted on [Render](https://render.com) — no installation needed. Just open and explore!
+
+> **Note:** The demo may take ~30 seconds to wake up on first load (free tier sleep mode).
+
+---
 
 A premium, full-stack platform for **Explainable AI (XAI)**. This framework predicts loan approvals using high-performance Gradient Boosting (XGBoost) and provides deep model interpretability using **SHAP (SHapley Additive exPlanations)**.
 
