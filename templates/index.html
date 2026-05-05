@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XAI Framework | Interpretable AI Dashboard</title>
+    <meta name="description" content="Interpretable AI & Model Explainability Framework powered by SHAP — real-time model insights.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- ── Floating Orbs Background ────────────── -->
+    <div class="orb orb-1" aria-hidden="true"></div>
+    <div class="orb orb-2" aria-hidden="true"></div>
+    <div class="orb orb-3" aria-hidden="true"></div>
+
+    <!-- ── App Shell ─────────────────────────── -->
+    <div class="app-container">
+
+        <!-- ── Sidebar ──────────────────────── -->
+        <aside class="sidebar" id="sidebar">
+
+            <!-- Logo -->
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <i data-lucide="brain-circuit"></i>
+                </div>
+                <div class="logo-text">
+                    <span class="brand">Interpretable</span>
+                    <span class="sub-brand">AI Framework</span>
+                </div>
+            </div>
+
+            <!-- Nav -->
+            <nav class="side-nav" role="navigation" aria-label="Main Navigation">
+                <a href="javascript:void(0)" class="nav-item active" id="nav-overview" onclick="switchView('overview')">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Overview</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-training" onclick="switchView('training')">
+                    <i data-lucide="cpu"></i>
+                    <span>Model Training</span>
+                    <span class="nav-badge" id="badge-training" style="display:none;">New</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-predictions" onclick="switchView('predictions')">
+                    <i data-lucide="line-chart"></i>
+                    <span>Predictions</span>
+                </a>
+                <a href="javascript:void(0)" class="nav-item" id="nav-explanations" onclick="switchView('explanations')">
+                    <i data-lucide="scatter-chart"></i>
+                    <span>Explanations</span>
+                </a>
+
+                <div class="nav-divider"></div>
+
+                <a href="javascript:void(0)" class="nav-item" id="nav-settings" onclick="switchView('settings')">
+                    <i data-lucide="settings-2"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <!-- Version chip -->
+            <div class="sidebar-version">
+                <span class="version-chip">
+                    <i data-lucide="zap"></i>
+                    v2.1.0 — SHAP + XGBoost
+                </span>
+            </div>
+
+            <!-- User Profile -->
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar">AI</div>
+                    <div class="user-info">
+                        <span class="user-name">Local Analyst</span>
+                        <span class="user-role">Administrator</span>
+                    </div>
+                    <i data-lucide="more-vertical" style="width:16px;height:16px;color:var(--text-muted);margin-left:auto;"></i>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ── Main Content ───────────────────── -->
+        <main class="main-content">
+
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <!-- Breadcrumb -->
+                <div class="breadcrumb-area">
+                    <span class="breadcrumb-root">XAI Framework</span>
+                    <i data-lucide="chevron-right" class="bc-sep"></i>
+                    <span class="breadcrumb-current" id="breadcrumbCurrent">Overview</span>
+                </div>
+
+                <!-- Search -->
+                <div class="search-box" role="search">
+                    <i data-lucide="search"></i>
+                    <input type="text" id="mainSearch" placeholder="Search metrics, features, logs…" autocomplete="off" aria-label="Search">
+                    <kbd class="search-kbd">⌘K</kbd>
+                    <div id="searchPopover" class="search-popover hidden" role="listbox">
+                        <div class="popover-header">Quick Search</div>
+                        <div class="search-list">
+                            <div class="search-result-item">No results found.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="top-actions">
+                    <!-- Notifications -->
+                    <div class="notifications-wrapper">
+                        <button class="icon-btn" onclick="toggleNotifications()" aria-label="Notifications" id="btn-notifications">
+                            <i data-lucide="bell"></i>
+                            <span class="notification-dot" id="notifDot"></span>
+                        </button>
+                        <div id="notificationPanel" class="notification-panel hidden" role="dialog" aria-label="Notifications">
+                            <div class="panel-header">
+                                <span>Notifications</span>
+                                <button class="panel-clear-btn" onclick="clearNotifications()">Clear all</button>
+                            </div>
+                            <div id="notificationList" class="notification-list">
+                                <div class="empty-state">No new notifications</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Refresh -->
+                    <button class="icon-btn" onclick="handleRefresh()" aria-label="Refresh" title="Refresh data" id="btn-refresh">
+                        <i data-lucide="refresh-cw"></i>
+                    </button>
+
+                    <!-- Status -->
+                    <div class="status-indicator" id="statusPill">
+                        <span class="dot"></span>
+                        <span id="system-status">System Active</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- ── Content Body ─────────────── -->
+            <div class="content-body">
+
+                <!-- ═══════════════════════════════
+                     VIEW 1 — OVERVIEW
+                ═══════════════════════════════ -->
+                <section id="view-overview" class="view active" aria-label="Platform Overview">
+
+                    <div class="welcome-section">
+                        <div class="page-label">
+                            <i data-lucide="layout-dashboard"></i>
+                            Dashboard
+                        </div>
+                        <h1>Platform Overview</h1>
+                        <p>Real-time metrics and health of your Interpretable AI explainability pipeline.</p>
+                    </div>
+
+                    <div class="dashboard-grid">
+
+                        <!-- Stat: Accuracy -->
+                        <div class="glass-card stat-card">
+                            <div class="card-icon indigo">
+                                <i data-lucide="trending-up"></i>
+                            </div>
+                            <div class="stat-content">
+                                <span class="stat-label">Model Accuracy</span>
+                                <h3 id="stat-accuracy">--.--%</h3>
+                                <span class="stat-trend positive" id="trend-accuracy">Train model to see results</span>
+                            </div>
+                        </div>
+
+                        <!-- Stat: Dataset -->
+                        <div class="glass-card stat-card">
+                            <div class="card-icon rose">
+                                <i data-lucide="database"></i>
+                            </div>
+                            <div class="stat-content">
+                                <span class="stat-label">Dataset Size</span>
+                                <h3 id="stat-samples">0</h3>
+                                <span class="stat-trend">Synthetic Samples</span>
+                            </div>
+                        </div>
+
+                        <!-- Stat: Last Training -->
+                        <div class="glass-card stat-card">
+                            <div class="card-icon violet">
+                                <i data-lucide="timer"></i>
+                            </div>
+                            <div class="stat-content">
+                                <span class="stat-label">Last Training</span>
+                                <h3 id="stat-time">--:--</h3>
+                                <span class="stat-trend">Local Runtime</span>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="glass-card span-2">
+                            <div class="card-header">
+                                <div class="card-icon indigo"><i data-lucide="grid-3x3"></i></div>
+                                <h3>Quick Actions</h3>
+                            </div>
+                            <div class="actions-row">
+                                <button class="action-tile" onclick="switchView('training')" id="action-train">
+                                    <i data-lucide="play-circle"></i>
+                                    <span>Start Training</span>
+                                </button>
+                                <button class="action-tile" onclick="switchView('predictions')" id="action-predict">
+                                    <i data-lucide="search-check"></i>
+                                    <span>Run Prediction</span>
+                                </button>
+                                <button class="action-tile" onclick="switchView('explanations')" id="action-explain">
+                                    <i data-lucide="bar-chart-horizontal"></i>
+                                    <span>View Insights</span>
+                                </button>
+                                <button class="action-tile" onclick="toggleNotifications()" id="action-logs">
+                                    <i data-lucide="scroll-text"></i>
+                                    <span>System Logs</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Model Integrity -->
+                        <div class="glass-card span-1">
+                            <div class="card-header">
+                                <div class="card-icon violet"><i data-lucide="shield-check"></i></div>
+                                <h3>Model Integrity</h3>
+                            </div>
+                            <div class="integrity-chart">
+                                <div class="circle-progress">
+                                    <svg viewBox="0 0 36 36" width="110" height="110">
+                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                              fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="2.8"/>
+                                        <path id="integrityCircle"
+                                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                              fill="none" stroke="url(#grad1)" stroke-width="2.8"
+                                              stroke-dasharray="85, 100" stroke-linecap="round"/>
+                                        <defs>
+                                            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" style="stop-color:#6366f1"/>
+                                                <stop offset="50%" style="stop-color:#a855f7"/>
+                                                <stop offset="100%" style="stop-color:#ec4899"/>
+                                            </linearGradient>
+                                        </defs>
+                                    </svg>
+                                    <div class="percentage" id="integrityPct">85%</div>
+                                </div>
+                                <p class="muted centered">Compliance Score</p>
+                            </div>
+                        </div>
+
+                        <!-- Activity Feed -->
+                        <div class="glass-card span-3" id="activity-card">
+                            <div class="card-header">
+                                <div class="card-icon cyan-ic"><i data-lucide="activity"></i></div>
+                                <h3>Recent Activity</h3>
+                                <span class="card-meta" style="margin-left:auto;font-size:0.75rem;color:var(--text-muted);">Live feed</span>
+                            </div>
+                            <div id="activityFeed" class="activity-feed">
+                                <div class="activity-item">
+                                    <div class="activity-dot dot-indigo"></div>
+                                    <div class="activity-body">
+                                        <span class="activity-title">System initialized</span>
+                                        <span class="activity-time" id="initTime">just now</span>
+                                    </div>
+                                    <span class="activity-tag tag-info">System</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div><!-- /dashboard-grid -->
+                </section>
+
+                <!-- ═══════════════════════════════
+                     VIEW 2 — MODEL TRAINING
+                ═══════════════════════════════ -->
+                <section id="view-training" class="view" aria-label="Model Training">
+
+                    <div class="welcome-section">
+                        <div class="page-label">
+                            <i data-lucide="cpu"></i>
+                            Training
+                        </div>
+                        <h1>Model Training Center</h1>
+                        <p>Configure, execute and monitor the full XGBoost training pipeline with SHAP explainability.</p>
+                    </div>
+
+                    <div class="training-layout">
+
+                        <!-- Left: Console Panel -->
+                        <div class="glass-card training-panel">
+                            <div class="card-header">
+                                <div class="card-icon indigo"><i data-lucide="terminal"></i></div>
+                                <h3>Execution Console</h3>
+                                <span class="session-badge" id="sessionBadge">Idle</span>
+                            </div>
+
+                            <div class="card-content">
+                                <div class="model-params">
+                                    <div class="param-row">
+                                        <span>Algorithm</span>
+                                        <span class="badge">XGBoost Classifier</span>
+                                    </div>
+                                    <div class="param-row">
+                                        <span>Task</span>
+                                        <span class="badge">Binary Classification</span>
+                                    </div>
+                                    <div class="param-row">
+                                        <span>Explainability</span>
+                                        <span class="badge">SHAP Kernel</span>
+                                    </div>
+                                    <div class="param-row">
+                                        <span>Framework</span>
+                                        <span class="badge">scikit-learn API</span>
+                                    </div>
+                                </div>
+
+                                <button id="trainBtn" class="accent-btn full-width mt-20" onclick="trainModel()">
+                                    <i data-lucide="zap"></i>
+                                    <span>Initiate Training</span>
+                                </button>
+
+                                <div id="trainProgress" class="progress-container hidden">
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill" id="progressFill"></div>
+                                    </div>
+                                    <span class="progress-text">Fitting model and computing SHAP values…</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Metrics -->
+                        <div class="glass-card metrics-grid" style="align-content:start;">
+                            <div class="metric-block">
+                                <label>ROC AUC</label>
+                                <span id="metric-auc" class="val">--</span>
+                            </div>
+                            <div class="metric-block">
+                                <label>F1 Score</label>
+                                <span id="metric-f1" class="val">--</span>
+                            </div>
+                            <div class="metric-block">
+                                <label>Precision</label>
+                                <span id="metric-precision" class="val">--</span>
+                            </div>
+                            <div class="metric-block">
+                                <label>Recall</label>
+                                <span id="metric-recall" class="val">--</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- ═══════════════════════════════
+                     VIEW 3 — PREDICTIONS
+                ═══════════════════════════════ -->
+                <section id="view-predictions" class="view" aria-label="Prediction Engine">
+
+                    <div class="welcome-section">
+                        <div class="page-label">
+                            <i data-lucide="line-chart"></i>
+                            Predictions
+                        </div>
+                        <h1>Prediction Engine</h1>
+                        <p>Generate individual credit-approval forecasts with real-time probability scores and SHAP waterfall explanations.</p>
+                    </div>
+
+                    <div class="prediction-layout">
+
+                        <!-- Input Card -->
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <div class="card-icon rose"><i data-lucide="user-round-cog"></i></div>
+                                <h3>Applicant Profile</h3>
+                            </div>
+                            <div class="input-grid">
+                                <div class="input-group">
+                                    <label for="age"><i data-lucide="calendar" class="label-icon"></i> Age</label>
+                                    <div class="input-wrapper">
+                                        <input type="number" id="age" value="35" min="18" max="100" placeholder="35">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="income"><i data-lucide="banknote" class="label-icon"></i> Annual Income</label>
+                                    <div class="input-wrapper">
+                                        <input type="number" id="income" value="75000" placeholder="75000">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="loan"><i data-lucide="landmark" class="label-icon"></i> Loan Amount</label>
+                                    <div class="input-wrapper">
+                                        <input type="number" id="loan" value="25000" placeholder="25000">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="credit"><i data-lucide="star" class="label-icon"></i> Credit Score</label>
+                                    <div class="input-wrapper">
+                                        <input type="number" id="credit" value="720" min="300" max="850" placeholder="720">
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="accent-btn full-width mt-20" onclick="predict()" id="predictBtn">
+                                <i data-lucide="play"></i>
+                                <span>Calculate Outcome</span>
+                            </button>
+                        </div>
+
+                        <!-- Result Card -->
+                        <div id="result-card" class="glass-card prediction-summary hidden">
+                            <div class="card-header">
+                                <div class="card-icon violet"><i data-lucide="clipboard-check"></i></div>
+                                <h3>Decision Result</h3>
+                            </div>
+                            <div class="outcome-display">
+                                <div id="predictionOutcome" class="outcome-label">--</div>
+                                <div class="confidence-meter">
+                                    <span class="meter-label">Model Confidence</span>
+                                    <div class="meter-bg">
+                                        <div id="prob-fill" class="meter-fill"></div>
+                                    </div>
+                                    <span id="prob-text" class="meter-val">0%</span>
+                                </div>
+                            </div>
+                            <button class="ghost-btn full-width mt-20" onclick="switchView('explanations')">
+                                <i data-lucide="bar-chart-horizontal"></i>
+                                <span>View Local Explanation</span>
+                            </button>
+                        </div>
+
+                        <!-- Placeholder when no result yet -->
+                        <div id="result-placeholder" class="glass-card prediction-placeholder">
+                            <div class="placeholder-inner">
+                                <div class="placeholder-icon-wrap">
+                                    <i data-lucide="sparkles"></i>
+                                </div>
+                                <p class="placeholder-title">Ready to Predict</p>
+                                <p class="placeholder-sub">Fill in the applicant's profile and click <strong>Calculate Outcome</strong> to generate a prediction with SHAP explanations.</p>
+                            </div>
+                        </div>
+
+                    </div><!-- /prediction-layout -->
+
+                    <!-- ── AI Decision Analysis Panel ───────────── -->
+                    <div id="analysis-panel" class="analysis-panel hidden">
+                        <div class="analysis-header">
+                            <div class="analysis-header-left">
+                                <div class="analysis-icon">
+                                    <i data-lucide="brain-circuit"></i>
+                                </div>
+                                <div class="analysis-titles">
+                                    <h2 class="analysis-title">AI Decision Analysis</h2>
+                                    <p class="analysis-subtitle">Interpreting why the model arrived at this verdict</p>
+                                </div>
+                            </div>
+                            <div id="analysisVerdict" class="analysis-verdict-chip"></div>
+                        </div>
+
+                        <div class="analysis-grid">
+                            <div class="analysis-col">
+                                <div class="analysis-section-title">
+                                    <span class="icon-wrap indigo"><i data-lucide="list-checks"></i></span>
+                                    Key Decision Factors
+                                </div>
+                                <p class="analysis-desc">The following features had the most significant impact on your loan application outcome.</p>
+                                <div id="shapBreakdown" class="shap-list"></div>
+                            </div>
+
+                            <div class="analysis-col" id="improvements-col">
+                                <div class="analysis-section-title">
+                                    <span class="icon-wrap rose"><i data-lucide="lightbulb"></i></span>
+                                    Optimization Strategy
+                                </div>
+                                <p class="analysis-desc" id="improvements-intro">Actionable steps to strengthen your profile for future applications.</p>
+                                <div id="improvementsList" class="improvements-list"></div>
+                            </div>
+                        </div>
+                    </div><!-- /analysis-panel -->
+
+                </section>
+
+                <!-- ═══════════════════════════════
+                     VIEW 4 — EXPLANATIONS
+                ═══════════════════════════════ -->
+                <section id="view-explanations" class="view" aria-label="Interpretability Lab">
+
+                    <div class="welcome-section">
+                        <div class="page-label">
+                            <i data-lucide="scatter-chart"></i>
+                            Explanations
+                        </div>
+                        <h1>Interpretability Lab</h1>
+                        <p>Analyze global and local SHAP feature-importance maps and correlation plots.</p>
+                    </div>
+
+                    <div class="explanations-tabs-container glass-card">
+                        <div class="tabs-header">
+                            <button class="tab-link active" data-tab="local" id="tabl-local">
+                                <i data-lucide="layers"></i>
+                                Individual (Waterfall)
+                            </button>
+                            <button class="tab-link" data-tab="summary" id="tabl-summary">
+                                <i data-lucide="align-left"></i>
+                                Global (Beeswarm)
+                            </button>
+                            <button class="tab-link" data-tab="dependence" id="tabl-dependence">
+                                <i data-lucide="git-fork"></i>
+                                Feature Correlation
+                            </button>
+                        </div>
+
+                        <div class="tab-viewport">
+                            <div id="tab-local" class="tab-section active">
+                                <div class="img-container">
+                                    <img id="waterfallPlot" src="" alt="Run a prediction to generate the individual SHAP waterfall plot">
+                                </div>
+                            </div>
+                            <div id="tab-summary" class="tab-section">
+                                <div class="img-container">
+                                    <img id="summaryPlot" src="/static/images/shap_plots/summary.png" alt="Train the model to see the global SHAP summary plot">
+                                </div>
+                            </div>
+                            <div id="tab-dependence" class="tab-section">
+                                <div class="img-container">
+                                    <img id="dependencePlot" src="/static/images/shap_plots/dependence.png" alt="Train the model to see the SHAP dependence plot">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ═══════════════════════════════
+                     VIEW 5 — SETTINGS
+                ═══════════════════════════════ -->
+                <section id="view-settings" class="view" aria-label="Platform Settings">
+
+                    <div class="welcome-section">
+                        <div class="page-label">
+                            <i data-lucide="settings-2"></i>
+                            Settings
+                        </div>
+                        <h1>Platform Settings</h1>
+                        <p>Global configuration for model hyperparameters, interface preferences, and data connectors.</p>
+                    </div>
+
+                    <div class="settings-grid">
+
+                        <!-- Model Parameters -->
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <div class="card-icon indigo"><i data-lucide="sliders-horizontal"></i></div>
+                                <h3>Model Parameters</h3>
+                            </div>
+                            <div class="setting-item">
+                                <label for="s-lr">Learning Rate <span class="setting-val" id="lrVal">0.10</span></label>
+                                <input type="range" id="s-lr" min="0.01" max="1" step="0.01" value="0.1"
+                                       oninput="document.getElementById('lrVal').textContent = parseFloat(this.value).toFixed(2)">
+                            </div>
+                            <div class="setting-item">
+                                <label for="s-est">Estimators</label>
+                                <input type="number" id="s-est" value="100" min="10" max="1000" step="10">
+                            </div>
+                            <div class="setting-item">
+                                <label for="s-depth">Max Depth</label>
+                                <input type="number" id="s-depth" value="6" min="1" max="20">
+                            </div>
+                        </div>
+
+                        <!-- Interface Preferences -->
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <div class="card-icon violet"><i data-lucide="monitor-cog"></i></div>
+                                <h3>Interface</h3>
+                            </div>
+                            <div class="setting-item flex">
+                                <span>High Resolution Plots</span>
+                                <label class="switch">
+                                    <input type="checkbox" checked id="s-hires">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item flex">
+                                <span>Auto-save Predictions</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="s-autosave">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item flex">
+                                <span>Animated Transitions</span>
+                                <label class="switch">
+                                    <input type="checkbox" checked id="s-anim">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Data Source -->
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <div class="card-icon rose"><i data-lucide="database"></i></div>
+                                <h3>Data Source</h3>
+                            </div>
+                            <div class="setting-item">
+                                <label>Dataset File</label>
+                                <div class="data-source-box">
+                                    <i data-lucide="file-spreadsheet"></i>
+                                    <span>credit_data.csv</span>
+                                    <span class="badge" style="margin-left:auto;">Active</span>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <label>Target Column</label>
+                                <input type="text" class="text-input-box" value="approved" readonly>
+                            </div>
+                        </div>
+
+                        <!-- About -->
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <div class="card-icon cyan-ic"><i data-lucide="info"></i></div>
+                                <h3>About</h3>
+                            </div>
+                            <div class="about-list">
+                                <div class="about-row">
+                                    <span>Framework Version</span>
+                                    <span class="badge">v2.1.0</span>
+                                </div>
+                                <div class="about-row">
+                                    <span>SHAP Version</span>
+                                    <span class="badge">0.41.0</span>
+                                </div>
+                                <div class="about-row">
+                                    <span>XGBoost</span>
+                                    <span class="badge">1.7.x</span>
+                                </div>
+                                <div class="about-row">
+                                    <span>Backend</span>
+                                    <span class="badge">Flask 3.x</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div><!-- /settings-grid -->
+                </section>
+
+            </div><!-- /content-body -->
+        </main>
+    </div><!-- /app-container -->
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container" role="status" aria-live="polite"></div>
+
+    <!-- Scripts -->
+    <script>lucide.createIcons();</script>
+    <script src="/static/js/script.js"></script>
+</body>
+</html>
